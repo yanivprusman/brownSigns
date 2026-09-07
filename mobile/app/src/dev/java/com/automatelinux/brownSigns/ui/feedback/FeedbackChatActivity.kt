@@ -9,7 +9,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.automatelinux.feedbacklib.FeedbackConfig
 import com.automatelinux.feedbacklib.ui.chat.FeedbackChatScreen
 import com.automatelinux.feedbacklib.ui.chat.FeedbackChatViewModel
-import com.automatelinux.brownSigns.ui.theme.MidreshazeTheme
+import com.automatelinux.brownSigns.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -20,7 +20,7 @@ class FeedbackChatActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MidreshazeTheme {
+            AppTheme {
                 val viewModel: FeedbackChatViewModel = hiltViewModel()
                 LaunchedEffect(Unit) { viewModel.setServerFound(true) }
                 FeedbackChatScreen(

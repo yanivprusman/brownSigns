@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.automatelinux.brownSigns.data.model.Category
+import com.automatelinux.brownSigns.geo.groupDigits
 import com.automatelinux.brownSigns.ui.theme.LocalSignColors
 
 /**
@@ -108,7 +109,7 @@ private fun Chip(
             },
         )
         Text(
-            text = "$count",
+            text = groupDigits(count),
             fontSize = 12.sp,
             color = if (selected) colors.signInk.copy(alpha = 0.75f) else colors.inkDim,
         )

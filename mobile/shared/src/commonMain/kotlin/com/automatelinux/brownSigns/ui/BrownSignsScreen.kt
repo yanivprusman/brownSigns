@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.automatelinux.brownSigns.data.model.Category
+import com.automatelinux.brownSigns.geo.groupDigits
 import com.automatelinux.brownSigns.ui.components.CategoryChips
 import com.automatelinux.brownSigns.ui.components.RowHairline
 import com.automatelinux.brownSigns.ui.components.SiteRow
@@ -160,7 +161,7 @@ private fun SignHeader(state: BrownSignsUiState, actions: BrownSignsActions) {
                 )
                 Spacer(Modifier.weight(1f))
                 Text(
-                    text = "${state.total}",
+                    text = "${groupDigits(state.total)} יעדים",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = colors.signInk.copy(alpha = 0.7f),
@@ -316,7 +317,7 @@ private fun DatasetFooter(state: BrownSignsUiState) {
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
-            text = "${state.total} יעדים · מיפוי OpenStreetMap",
+            text = "${groupDigits(state.total)} יעדים · מיפוי OpenStreetMap",
             fontSize = 12.sp,
             color = colors.inkDim,
             textAlign = TextAlign.Center,

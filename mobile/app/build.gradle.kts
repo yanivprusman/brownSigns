@@ -70,7 +70,6 @@ dependencies {
     implementation(libs.kotlinx.datetime)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.multiplatform.settings)
 
     // Compose BOM
@@ -99,7 +98,6 @@ dependencies {
     implementation(libs.retrofit.converter.gson)
     implementation(libs.gson)
 
-    implementation(libs.play.services.location)
 
     // Core
     implementation(libs.core.ktx)

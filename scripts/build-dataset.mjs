@@ -185,6 +185,14 @@ function coordsOf(el) {
   return null
 }
 
+// A name that opens with punctuation is a surveyor's label, not a destination:
+// OSM carries whole numbered series like "*<name> 1 … *<name> 39" that exist to
+// mark a survey point. No brown sign has ever begun with an asterisk.
+const SURVEY_LABEL = /^[^\p{L}\p{N}]/u
+// Likewise a name made only of digits — "002", "1989", "200+" are catalogue
+// numbers someone typed into the name field.
+const NO_LETTERS = /^[^\p{L}]+$/u
+
 function toSite(el) {
   const t = el.tags || {}
   const cat = categorise(t)
@@ -193,6 +201,8 @@ function toSite(el) {
   const he = pick(t, 'name:he', 'name', 'alt_name:he')
   const en = pick(t, 'name:en', 'int_name', 'alt_name:en')
   if (!he && !en) return null                      // an unnamed feature gets no sign
+  const displayName = he || en
+  if (SURVEY_LABEL.test(displayName) || NO_LETTERS.test(displayName)) return null
 
   const c = coordsOf(el)
   if (!c) return null
