@@ -1,0 +1,7 @@
+{
+  "description": "שלט חום — every brown-signed destination in Israel (national parks, nature reserves, museums, archaeological and heritage sites), listed nearest-first from where you are standing",
+  "icon": "Signpost",
+  "sharedLibs": [
+    "android-feedback-lib"
+  ]
+}
