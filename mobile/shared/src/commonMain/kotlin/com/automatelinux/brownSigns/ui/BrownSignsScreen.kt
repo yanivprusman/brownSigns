@@ -104,6 +104,7 @@ fun BrownSignsScreen(state: BrownSignsUiState, actions: BrownSignsActions) {
                 onClear = actions::onClearFilters,
                 modifier = Modifier.fillMaxWidth(),
             )
+            RefreshNote(state.refreshNote)
         }
 
         when {
@@ -119,7 +120,9 @@ fun BrownSignsScreen(state: BrownSignsUiState, actions: BrownSignsActions) {
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 24.dp),
+                        // Clearance for the back-to-top control, so the last
+                        // row is never parked underneath it.
+                        contentPadding = PaddingValues(bottom = 88.dp),
                     ) {
                         items(state.ranked, key = { it.site.id }) { ranked ->
                             SiteRow(
@@ -151,6 +154,21 @@ fun BrownSignsScreen(state: BrownSignsUiState, actions: BrownSignsActions) {
             heading = state.heading,
             actions = actions,
             onDismiss = { actions.onOpenSite(null) },
+        )
+    }
+}
+
+/** What the last refresh found. Says so for a moment, then gets out of the way. */
+@Composable
+private fun RefreshNote(note: String?) {
+    val colors = LocalSignColors.current
+    AnimatedVisibility(visible = note != null, enter = fadeIn(), exit = fadeOut()) {
+        Text(
+            text = note.orEmpty(),
+            fontSize = 12.sp,
+            color = colors.inkDim,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
         )
     }
 }

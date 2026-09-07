@@ -16,6 +16,7 @@ import com.automatelinux.brownSigns.util.ScreenTracker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +26,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import kotlin.math.abs
+import kotlin.time.TimeSource
+import kotlin.time.Duration.Companion.milliseconds
 
 @HiltViewModel
 class BrownSignsViewModel @Inject constructor(
@@ -49,6 +52,7 @@ class BrownSignsViewModel @Inject constructor(
     private var all: List<Site> = emptyList()
     private var lastFix: Location? = null
     private var rankingJob: Job? = null
+    private var refreshJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -118,9 +122,12 @@ class BrownSignsViewModel @Inject constructor(
         return if (d > 180f) 360f - d else d
     }
 
-    private fun refreshInBackground(current: SiteData) {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(refreshing = true, refreshError = null)
+    private fun refreshInBackground(current: SiteData, announce: Boolean = false) {
+        refreshJob?.cancel()
+        refreshJob = viewModelScope.launch {
+            val startedAt = TimeSource.Monotonic.markNow()
+            _state.value = _state.value.copy(refreshing = true, refreshError = null, refreshNote = null)
+            var note: String? = null
             try {
                 val newer = repository.refresh(current)
                 if (newer != null) {
@@ -132,13 +139,31 @@ class BrownSignsViewModel @Inject constructor(
                         counts = countByCategory(all, _state.value.query),
                     )
                     rerank()
+                    note = "הרשימה עודכנה — ${newer.count} יעדים"
+                } else {
+                    note = "הרשימה מעודכנת"
                 }
-                _state.value = _state.value.copy(refreshing = false)
+                _state.value = _state.value.copy(refreshError = null)
             } catch (e: Exception) {
                 // The bundled list is already on screen and correct; a failed
                 // update is a footnote, not a failure of the app.
                 Log.i(TAG, "dataset refresh skipped: ${e.message}")
-                _state.value = _state.value.copy(refreshing = false, refreshError = e.message)
+                note = "העדכון לא הצליח — הרשימה שמורה במכשיר"
+                _state.value = _state.value.copy(refreshError = e.message)
+            }
+
+            // The check usually answers in milliseconds. Ending there would look
+            // exactly like a gesture the app ignored, so the spinner is held long
+            // enough to read as an answer.
+            val elapsed = startedAt.elapsedNow()
+            if (announce && elapsed < MIN_SPINNER) delay(MIN_SPINNER - elapsed)
+            _state.value = _state.value.copy(
+                refreshing = false,
+                refreshNote = if (announce) note else null,
+            )
+            if (announce) {
+                delay(NOTE_LINGER)
+                _state.value = _state.value.copy(refreshNote = null)
             }
         }
     }
@@ -192,9 +217,14 @@ class BrownSignsViewModel @Inject constructor(
         _effects.tryEmit(Effect.OpenUrl(url))
     }
 
+    /** Pull-to-refresh: the user asked, so the result is said out loud. */
     override fun onRefresh() {
-        held?.let { refreshInBackground(it) }
+        held?.let { refreshInBackground(it, announce = true) }
     }
 
-    private companion object { const val TAG = "BrownSignsVM" }
+    private companion object {
+        const val TAG = "BrownSignsVM"
+        val MIN_SPINNER = 600.milliseconds
+        val NOTE_LINGER = 2_500.milliseconds
+    }
 }

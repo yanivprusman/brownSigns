@@ -38,6 +38,12 @@ data class BrownSignsUiState(
     val refreshing: Boolean = false,
     /** Set when a refresh was attempted and failed — the bundled list is still on screen. */
     val refreshError: String? = null,
+    /**
+     * What the last refresh found, shown briefly and then cleared. A check that
+     * finishes in ten milliseconds and says nothing is indistinguishable from a
+     * gesture the app ignored.
+     */
+    val refreshNote: String? = null,
     val openSite: Site? = null,
 )
 
