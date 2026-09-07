@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  A fingerpost: one blade, pointed, on a post. Not a plain arrow — an arrow could
+  Themed-icon layer (Android 13+): the same fingerpost, one colour, pointed, on a post. Not a plain arrow — an arrow could
   be any app; a signpost is this one.
 
   Android shows only the central 72 of these 108, and guarantees only the central
@@ -11,8 +11,8 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#FFFFFFFF"
+    <path android:fillColor="#FF000000"
         android:pathData="M50,52.5 h8 a1.8,1.8 0 0 1 1.8,1.8 v18.4 a1.8,1.8 0 0 1 -1.8,1.8 h-8 a1.8,1.8 0 0 1 -1.8,-1.8 v-18.4 a1.8,1.8 0 0 1 1.8,-1.8 z" />
-    <path android:fillColor="#FFFFFFFF"
+    <path android:fillColor="#FF000000"
         android:pathData="M30.6,35 L65.7,35 L75.9,43.8 L65.7,52.5 L30.6,52.5 Z" />
 </vector>

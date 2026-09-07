@@ -1,5 +1,10 @@
 package com.automatelinux.brownSigns.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,21 +26,26 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LocationOff
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -47,17 +57,20 @@ import com.automatelinux.brownSigns.data.model.Category
 import com.automatelinux.brownSigns.geo.groupDigits
 import com.automatelinux.brownSigns.ui.components.CategoryChips
 import com.automatelinux.brownSigns.ui.components.RowHairline
-import com.automatelinux.brownSigns.ui.components.SiteRow
 import com.automatelinux.brownSigns.ui.components.SignpostIcon
+import com.automatelinux.brownSigns.ui.components.SiteRow
 import com.automatelinux.brownSigns.ui.theme.LocalSignColors
+import kotlinx.coroutines.launch
 
 /**
  * The whole app: every brown-signed destination in the country, nearest first.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BrownSignsScreen(state: BrownSignsUiState, actions: BrownSignsActions) {
     val colors = LocalSignColors.current
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
     // A new query or filter is a new question — answer it from the top.
     LaunchedEffect(state.query, state.selected) {
@@ -97,22 +110,36 @@ fun BrownSignsScreen(state: BrownSignsUiState, actions: BrownSignsActions) {
             state.fatal != null -> FatalState(state.fatal)
             state.loading -> LoadingState()
             state.ranked.isEmpty() -> EmptyState(state, actions)
-            else -> LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(colors.page),
-                contentPadding = PaddingValues(bottom = 24.dp),
-            ) {
-                items(state.ranked, key = { it.site.id }) { ranked ->
-                    SiteRow(
-                        ranked = ranked,
-                        heading = state.heading,
-                        onClick = { actions.onOpenSite(ranked.site) },
-                    )
-                    RowHairline()
+            else -> Box(Modifier.fillMaxSize()) {
+                PullToRefreshBox(
+                    isRefreshing = state.refreshing,
+                    onRefresh = actions::onRefresh,
+                    modifier = Modifier.fillMaxSize().background(colors.page),
+                ) {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 24.dp),
+                    ) {
+                        items(state.ranked, key = { it.site.id }) { ranked ->
+                            SiteRow(
+                                ranked = ranked,
+                                heading = state.heading,
+                                onClick = { actions.onOpenSite(ranked.site) },
+                            )
+                            RowHairline()
+                        }
+                        item { DatasetFooter(state) }
+                    }
                 }
-                item { DatasetFooter(state) }
+
+                // Six thousand rows deep, the way back to the nearest one should
+                // not be a long swipe. Sits opposite the feedback bubble.
+                BackToTop(
+                    visible = listState.firstVisibleItemIndex > 8,
+                    onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                    modifier = Modifier.align(Alignment.BottomStart).padding(20.dp),
+                )
             }
         }
     }
@@ -125,6 +152,34 @@ fun BrownSignsScreen(state: BrownSignsUiState, actions: BrownSignsActions) {
             actions = actions,
             onDismiss = { actions.onOpenSite(null) },
         )
+    }
+}
+
+/** Appears once the list has been scrolled past the places that are actually near. */
+@Composable
+private fun BackToTop(visible: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = LocalSignColors.current
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn() + scaleIn(initialScale = 0.8f),
+        exit = fadeOut() + scaleOut(targetScale = 0.8f),
+        modifier = modifier,
+    ) {
+        Box(
+            Modifier
+                .size(46.dp)
+                .background(colors.signField, CircleShape)
+                .border(1.5.dp, colors.signInk.copy(alpha = 0.85f), CircleShape)
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.KeyboardArrowUp,
+                contentDescription = "חזרה לראש הרשימה",
+                tint = colors.signInk,
+                modifier = Modifier.size(26.dp),
+            )
+        }
     }
 }
 

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="18 18 72 72" width="72" height="72">
+  <!-- The same fingerpost as the phone's launcher icon, framed the same way
+       (Android shows only the central 72 of a 108 icon), so the tab and the
+       home screen carry one mark. Source: mobile/app/src/main/res/drawable/ic_launcher_*.xml -->
+  <defs>
+    <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6E5033"/>
+      <stop offset="1" stop-color="#4C331E"/>
+    </linearGradient>
+  </defs>
+  <rect x="18" y="18" width="72" height="72" rx="14" fill="url(#field)"/>
+  <g fill="#FFFFFF">
+    <rect x="50" y="52.5" width="8" height="22" rx="1.8"/>
+    <path d="M30.6,35 L65.7,35 L75.9,43.8 L65.7,52.5 L30.6,52.5 Z"/>
+  </g>
+</svg>
