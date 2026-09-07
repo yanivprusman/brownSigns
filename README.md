@@ -1,34 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# שלט חום — brownSigns
 
-## Getting Started
+A brown road sign points at a tourist destination: a national park, a nature
+reserve, a museum, an archaeological or heritage site, an attraction, a
+viewpoint. This app is every one of them in the country, ordered by how far it
+is from where you are standing, with an arrow that keeps pointing at it as you
+turn.
 
-First, run the development server:
+**5,997 destinations** — 116 national parks, 347 nature reserves, 338 museums,
+2,436 archaeological sites, 1,093 heritage sites, 750 attractions, 917 viewpoints.
+
+## The pieces
+
+| | |
+| :-- | :-- |
+| `mobile/` | The app. KMP / Compose Multiplatform — all of it (models, geo, ranking, UI) in `shared/commonMain`, so the iOS target is a launcher away. Android package `com.automatelinux.brownSigns.dev`, launcher name **שלט חום**. |
+| `app/`, `lib/` | Next.js backend on **3147** (dev) / 3146 (prod), and the same list as a web page. Dev host: https://brownsigns.dev.ya-niv.com |
+| `scripts/build-dataset.mjs` | Builds `data/sites.json` from OpenStreetMap via Overpass. |
+| `data/sites.json` | The dataset. Committed, and copied into the APK's assets. |
+
+## Rebuilding the dataset
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+node scripts/build-dataset.mjs             # re-query Overpass (~30 s)
+node scripts/build-dataset.mjs --offline   # rebuild from .cache/, for filter changes
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+It writes `data/sites.json` **and** `mobile/app/src/main/assets/sites.json`, and
+refuses to write a dataset under 2,000 sites — that only ever means a query or a
+filter broke, and shipping it would be an app with no content and no error.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Which OSM features count as a destination, and which are dropped (surveyors'
+labels, boundary stones, roadside cannons), is decided in one place: the
+`HISTORIC` / `TOURISM` maps and the two name filters at the top of the script.
 
-## Learn More
+## Building the app
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+cd mobile && ./gradlew :app:assembleDevDebug
+/opt/automateLinux/utilities/chunked-adb-install.sh \
+  app/build/outputs/apk/dev/debug/app-dev-debug.apk 10.7.0.3:5555 com.automatelinux.brownSigns.dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`mobile/.env` (gitignored) holds `API_BASE_URL`, baked in at build time. It points
+at the desktop over WireGuard — `http://10.7.0.2:3147/`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Two rules the app is built on
 
-## Deploy on Vercel
+**The list is complete offline.** The dataset ships inside the APK, because the
+places it lists are exactly where there is no signal. The backend is only how a
+*newer* list arrives.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Newer means newer.** The dataset version is a content hash, so "different" says
+nothing about which way time runs. Both ends compare `generatedAt`, and a
+downloaded copy that is not newer than the one in the APK is deleted. Skipping
+that once cost the phone 62 sites.
