@@ -45,6 +45,7 @@ class BrownSignsViewModel @Inject constructor(
         data object AskLocationPermission : Effect
     }
 
+    private var held: SiteData? = null
     private var all: List<Site> = emptyList()
     private var lastFix: Location? = null
     private var rankingJob: Job? = null
@@ -53,6 +54,7 @@ class BrownSignsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val data = repository.load()
+                held = data
                 all = data.sites
                 _state.value = _state.value.copy(
                     loading = false,
@@ -62,7 +64,7 @@ class BrownSignsViewModel @Inject constructor(
                 )
                 rerank()
                 if (locationSource.hasPermission()) startLocation() else askPermission()
-                refreshInBackground(data.version)
+                refreshInBackground(data)
             } catch (e: Exception) {
                 Log.e(TAG, "dataset failed to load", e)
                 _state.value = _state.value.copy(loading = false, fatal = e.message ?: e.toString())
@@ -116,12 +118,13 @@ class BrownSignsViewModel @Inject constructor(
         return if (d > 180f) 360f - d else d
     }
 
-    private fun refreshInBackground(currentVersion: String) {
+    private fun refreshInBackground(current: SiteData) {
         viewModelScope.launch {
             _state.value = _state.value.copy(refreshing = true, refreshError = null)
             try {
-                val newer = repository.refresh(currentVersion)
+                val newer = repository.refresh(current)
                 if (newer != null) {
+                    held = newer
                     all = newer.sites
                     _state.value = _state.value.copy(
                         total = newer.count,
@@ -190,7 +193,7 @@ class BrownSignsViewModel @Inject constructor(
     }
 
     override fun onRefresh() {
-        _state.value.datasetVersion?.let { refreshInBackground(it) }
+        held?.let { refreshInBackground(it) }
     }
 
     private companion object { const val TAG = "BrownSignsVM" }

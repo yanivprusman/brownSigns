@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.automatelinux.brownSigns.data.RankedSite
 import com.automatelinux.brownSigns.geo.compassPoint
-import com.automatelinux.brownSigns.geo.formatDistance
+import com.automatelinux.brownSigns.geo.formatDistanceParts
 import com.automatelinux.brownSigns.ui.theme.LocalSignColors
 import com.automatelinux.brownSigns.ui.theme.MeasureTextStyle
 
@@ -76,7 +76,7 @@ fun SiteRow(
         // The measurement column. Fixed width so the figures line up down the
         // list the way they would on a gantry.
         Column(
-            modifier = Modifier.width(74.dp),
+            modifier = Modifier.width(84.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(3.dp),
         ) {
@@ -88,13 +88,25 @@ fun SiteRow(
                     color = colors.inkDim,
                 )
             } else {
-                Text(
-                    text = formatDistance(metres),
-                    style = MeasureTextStyle,
-                    color = colors.measure,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                )
+                val (figure, unit) = formatDistanceParts(metres)
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = figure,
+                        style = MeasureTextStyle,
+                        color = colors.measure,
+                        maxLines = 1,
+                        softWrap = false,
+                    )
+                    Spacer(Modifier.width(3.dp))
+                    Text(
+                        text = unit,
+                        fontSize = 11.sp,
+                        color = colors.measure,
+                        maxLines = 1,
+                        softWrap = false,
+                        modifier = Modifier.padding(bottom = 2.dp),
+                    )
+                }
                 val bearing = ranked.bearing
                 if (bearing != null) {
                     if (heading != null) {

@@ -46,17 +46,26 @@ fun rankingDistance(from: LatLon, to: LatLon): Double {
     return dx * dx + dy * dy
 }
 
-/** "840 מ׳" under a kilometre, "12.4 ק״מ" under a hundred, "137 ק״מ" beyond. */
-fun formatDistance(metres: Double): String = when {
-    metres < 1_000 -> "${(metres / 10).roundToInt() * 10} מ׳"
+/**
+ * The figure and its unit, separately — a sign sets the number large and the
+ * unit small, and keeping them apart also stops "51.7 ק״מ" from being wider than
+ * the column that "70 מ׳" fits in.
+ */
+fun formatDistanceParts(metres: Double): Pair<String, String> = when {
+    metres < 1_000 -> "${(metres / 10).roundToInt() * 10}" to "מ׳"
     metres < 100_000 -> {
-        val km = metres / 1_000
-        val rounded = (km * 10).roundToInt() / 10.0
-        if (abs(rounded - rounded.roundToInt()) < 0.05) "${rounded.roundToInt()} ק״מ"
-        else "$rounded ק״מ"
+        val rounded = (metres / 100).roundToInt() / 10.0
+        val figure =
+            if (abs(rounded - rounded.roundToInt()) < 0.05) "${rounded.roundToInt()}"
+            else "$rounded"
+        figure to "ק״מ"
     }
-    else -> "${(metres / 1_000).roundToInt()} ק״מ"
+    else -> "${(metres / 1_000).roundToInt()}" to "ק״מ"
 }
+
+/** "840 מ׳", "12.4 ק״מ" — the two parts joined, where there is room for both. */
+fun formatDistance(metres: Double): String =
+    formatDistanceParts(metres).let { (figure, unit) -> "$figure $unit" }
 
 private val COMPASS = listOf("צפון", "צפון-מזרח", "מזרח", "דרום-מזרח", "דרום", "דרום-מערב", "מערב", "צפון-מערב")
 

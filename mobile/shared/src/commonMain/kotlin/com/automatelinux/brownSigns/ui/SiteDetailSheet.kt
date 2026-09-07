@@ -76,12 +76,15 @@ fun SiteDetailSheet(
                         .fillMaxWidth()
                         .border(2.dp, colors.signInk.copy(alpha = 0.85f), RoundedCornerShape(10.dp))
                         .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.Top) {
                         SignPlate(site.cat, size = 54.dp)
                         Spacer(Modifier.width(14.dp))
-                        Column(Modifier.weight(1f)) {
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
                             Text(
                                 text = site.he,
                                 style = MaterialTheme.typography.titleLarge,
@@ -92,13 +95,15 @@ fun SiteDetailSheet(
                                 fontSize = 13.sp,
                                 color = colors.signInk.copy(alpha = 0.75f),
                             )
+                            // The other languages a real sign carries, in the
+                            // order it carries them.
+                            site.en?.let {
+                                Text(it, fontSize = 14.sp, color = colors.signInk.copy(alpha = 0.8f))
+                            }
+                            site.ar?.let {
+                                Text(it, fontSize = 14.sp, color = colors.signInk.copy(alpha = 0.65f))
+                            }
                         }
-                    }
-                    site.en?.let {
-                        Text(it, fontSize = 14.sp, color = colors.signInk.copy(alpha = 0.8f))
-                    }
-                    site.ar?.let {
-                        Text(it, fontSize = 14.sp, color = colors.signInk.copy(alpha = 0.65f))
                     }
                 }
             }
