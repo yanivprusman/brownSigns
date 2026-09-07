@@ -1,3 +1,9 @@
+import { SiteBrowser } from './SiteBrowser'
+
 export default function Home() {
-  return null;
+  return (
+    <main>
+      <SiteBrowser />
+    </main>
+  )
 }
