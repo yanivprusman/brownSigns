@@ -4,6 +4,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
     id("android-flavors")
 }
 
@@ -19,7 +22,7 @@ val gitShortHash = providers.exec {
 val envFile = rootProject.file(".env")
 val envProps = Properties()
 if (envFile.exists()) envFile.inputStream().use { envProps.load(it) }
-val apiBaseUrl = envProps.getProperty("API_BASE_URL", "http://10.7.0.1:3147/")
+val apiBaseUrl = envProps.getProperty("API_BASE_URL", "http://10.7.0.2:3147/")
 
 android {
     namespace = "com.automatelinux.brownSigns"
@@ -54,12 +57,20 @@ android {
         compose = true
         buildConfig = true
     }
+    androidResources {
+        // sites.json is already compact JSON; compressing it again buys nothing
+        // and costs a decompress on every cold start.
+        noCompress += "json"
+    }
 }
 
 dependencies {
     // Shared KMP module (commonMain code shared with iOS)
     implementation(project(":shared"))
     implementation(libs.kotlinx.datetime)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.multiplatform.settings)
 
     // Compose BOM
@@ -76,7 +87,23 @@ dependencies {
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.lifecycle.viewmodel.compose)
 
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
+    implementation(libs.hilt.navigation.compose)
+
+    // The app's own dataset client is OkHttp + kotlinx.serialization;
+    // Retrofit/Gson exist for feedback-lib's FeedbackApi.
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.gson)
+
+    implementation(libs.play.services.location)
+
     // Core
     implementation(libs.core.ktx)
     implementation(libs.activity.compose)
+
+    "devImplementation"(project(":feedback-lib"))
 }
