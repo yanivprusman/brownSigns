@@ -20,10 +20,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.automatelinux.brownSigns.data.RankedSite
+import com.automatelinux.brownSigns.data.RouteSpot
 import com.automatelinux.brownSigns.geo.compassPoint
+import com.automatelinux.brownSigns.geo.formatDistance
 import com.automatelinux.brownSigns.geo.formatDistanceParts
 import com.automatelinux.brownSigns.ui.theme.LocalSignColors
 import com.automatelinux.brownSigns.ui.theme.MeasureTextStyle
+import kotlin.math.roundToInt
 
 /**
  * One destination. Reads the way a sign does: pictogram, where it is, how far —
@@ -80,7 +83,10 @@ fun SiteRow(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(3.dp),
         ) {
-            val metres = ranked.metres
+            val spot = ranked.onRoute
+            // Ordered by a route, the figure is how far the site is from the road;
+            // otherwise, how far it is from the phone.
+            val metres = spot?.offMetres ?: ranked.metres
             if (metres == null) {
                 Text(
                     text = "—",
@@ -107,30 +113,57 @@ fun SiteRow(
                         modifier = Modifier.padding(bottom = 2.dp),
                     )
                 }
-                val bearing = ranked.bearing
-                if (bearing != null) {
-                    if (heading != null) {
-                        DirectionArrow(
-                            degrees = (bearing.toFloat() - heading),
-                            color = colors.signField.let { if (colors.isNight) colors.measure else it },
-                            size = 24.dp,
-                        )
-                    } else {
-                        // No compass: name the direction instead of drawing an
-                        // arrow that would be pointing at nothing.
-                        Text(
-                            text = compassPoint(bearing),
-                            fontSize = 11.sp,
-                            color = colors.inkDim,
-                            maxLines = 1,
-                            textAlign = TextAlign.Center,
-                        )
+                if (spot != null) {
+                    Text(
+                        text = routeProgress(spot),
+                        fontSize = 11.sp,
+                        color = colors.inkDim,
+                        maxLines = 1,
+                        softWrap = false,
+                        textAlign = TextAlign.Center,
+                    )
+                } else {
+                    val bearing = ranked.bearing
+                    if (bearing != null) {
+                        if (heading != null) {
+                            DirectionArrow(
+                                degrees = (bearing.toFloat() - heading),
+                                color = colors.signField.let { if (colors.isNight) colors.measure else it },
+                                size = 24.dp,
+                            )
+                        } else {
+                            // No compass: name the direction instead of drawing an
+                            // arrow that would be pointing at nothing.
+                            Text(
+                                text = compassPoint(bearing),
+                                fontSize = 11.sp,
+                                color = colors.inkDim,
+                                maxLines = 1,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
                     }
                 }
             }
         }
     }
 }
+
+/**
+ * Where along the road a site comes up: "בעוד 12 ק״מ", "לידך", "מאחוריך" — or,
+ * when the phone is not on the route, the kilometre of the route it is at.
+ */
+fun routeProgress(spot: RouteSpot): String {
+    val ahead = spot.aheadMetres ?: return "בק״מ ${(spot.alongMetres / 1_000).roundToInt()}"
+    return when {
+        ahead < -ALONGSIDE_M -> "מאחוריך"
+        ahead <= ALONGSIDE_M -> "לידך"
+        else -> "בעוד ${formatDistance(ahead)}"
+    }
+}
+
+/** Within this far along the road, a site is beside the phone rather than ahead of it or behind. */
+private const val ALONGSIDE_M = 300.0
 
 /** The hairline between rows — structure, not decoration: it starts where the text does. */
 @Composable

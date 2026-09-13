@@ -19,5 +19,11 @@ Notes for anyone working here:
   `data/sites.json` by hand — it is generated, and hand edits vanish on the next
   rebuild. After changing it, re-run with `--offline` and rebuild the APK so the
   bundled asset matches.
+- **Ordering by a route needs `MOTIS_URL` in `.env.local`** (see `.env.example`).
+  The backend asks the MOTIS instance this peer already runs for the road and for
+  place search (`lib/motis.ts`); the phone measures every site against that road
+  itself (`geo/RouteLine.kt`) and keeps the route in `route.json`, so the order
+  holds with no signal. A route is never stood in for by a straight line — with
+  no road there is no route ordering, and the header says why.
 - **Android builds run on the desktop, never on the leader** (see the root
   `.claude/CLAUDE.md`).

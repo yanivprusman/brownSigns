@@ -5,6 +5,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Navigation
+import androidx.compose.material.icons.filled.Route
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -33,20 +37,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.automatelinux.brownSigns.data.RankedSite
 import com.automatelinux.brownSigns.data.model.Site
+import com.automatelinux.brownSigns.data.model.asDestination
 import com.automatelinux.brownSigns.geo.compassPoint
 import com.automatelinux.brownSigns.geo.formatDistance
 import com.automatelinux.brownSigns.ui.components.DirectionArrow
 import com.automatelinux.brownSigns.ui.components.SignPlate
+import com.automatelinux.brownSigns.ui.components.routeProgress
 import com.automatelinux.brownSigns.ui.theme.LocalSignColors
 import com.automatelinux.brownSigns.ui.theme.MeasureTextStyle
 
 /** One destination, opened: what it is, how far, and how to get there. */
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SiteDetailSheet(
     site: Site,
     ranked: RankedSite?,
     heading: Float?,
+    /** True when this site is the destination the list is already ordered by. */
+    isDestination: Boolean,
     actions: BrownSignsActions,
     onDismiss: () -> Unit,
 ) {
@@ -108,13 +116,18 @@ fun SiteDetailSheet(
                 }
             }
 
-            // Measurements
-            Row(
+            // Measurements. They wrap: ordered by a route there are two more of them.
+            FlowRow(
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 18.dp),
                 horizontalArrangement = Arrangement.spacedBy(28.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
+                ranked?.onRoute?.let { spot ->
+                    Measure("מהדרך", formatDistance(spot.offMetres))
+                    Measure("לאורך הדרך", routeProgress(spot))
+                }
                 ranked?.metres?.let { metres ->
                     Measure("מרחק אווירי", formatDistance(metres))
                 }
@@ -176,6 +189,11 @@ fun SiteDetailSheet(
                     primary = true,
                     onClick = { actions.onNavigateTo(site) },
                 )
+                if (!isDestination) {
+                    ActionButton(Icons.Filled.Route, "מה יש בדרך לכאן", false) {
+                        actions.onChooseDestination(site.asDestination())
+                    }
+                }
                 site.wikipediaUrl?.let { url ->
                     ActionButton(Icons.Filled.MenuBook, "ויקיפדיה", false) { actions.onOpenUrl(url) }
                 }
