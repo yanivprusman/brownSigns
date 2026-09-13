@@ -172,7 +172,7 @@ class BrownSignsViewModel @Inject constructor(
                     // The route stays in use, measured again against the sites
                     // that are actually in the list now.
                     routeIndex?.let { remeasure(it.route) }
-                    note = "הרשימה עודכנה — ${newer.count} יעדים"
+                    note = "הרשימה עודכנה — ${newer.count} אתרים"
                 } else {
                     note = "הרשימה מעודכנת"
                 }
@@ -332,7 +332,7 @@ class BrownSignsViewModel @Inject constructor(
 
     override fun onCloseDestinationPicker() {
         placesJob?.cancel()
-        ScreenTracker.currentScreen = "רשימת יעדים"
+        ScreenTracker.currentScreen = "רשימת אתרים"
         _state.value = _state.value.copy(picker = null)
     }
 
@@ -352,7 +352,7 @@ class BrownSignsViewModel @Inject constructor(
             // Typing comes in bursts; the backend is asked once it pauses.
             delay(PLACE_SEARCH_PAUSE)
             try {
-                val places = routes.searchPlaces(query)
+                val places = routes.searchPlaces(query, near = _state.value.location.position)
                 updatePicker(query) { it.copy(places = places, searching = false) }
             } catch (e: CancellationException) {
                 throw e
@@ -372,7 +372,7 @@ class BrownSignsViewModel @Inject constructor(
 
     override fun onChooseDestination(destination: Destination) {
         placesJob?.cancel()
-        ScreenTracker.currentScreen = "רשימת יעדים"
+        ScreenTracker.currentScreen = "רשימת אתרים"
         _state.value = _state.value.copy(picker = null, openSite = null)
         planRoute(destination)
     }
@@ -411,7 +411,7 @@ class BrownSignsViewModel @Inject constructor(
     override fun onRequestLocation() = askPermission()
 
     override fun onOpenSite(site: Site?) {
-        ScreenTracker.currentScreen = if (site == null) "רשימת יעדים" else "פרטי יעד"
+        ScreenTracker.currentScreen = if (site == null) "רשימת אתרים" else "פרטי אתר"
         _state.value = _state.value.copy(openSite = site)
     }
 

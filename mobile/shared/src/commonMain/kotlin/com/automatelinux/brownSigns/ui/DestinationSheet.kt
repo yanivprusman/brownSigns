@@ -42,12 +42,10 @@ import com.automatelinux.brownSigns.ui.components.SignPlate
 import com.automatelinux.brownSigns.ui.theme.LocalSignColors
 
 /**
- * "Where are you driving to?" — the question that turns the list from what is
- * near you into what is along your way.
- *
- * Sites from the list come first and need no connection: they are the names the
- * user reads on the signs, and a site is the destination this exists for. Towns
- * and addresses from the backend's place search come underneath.
+ * "Where are you driving to?" — typed as an address, the way anyone says where
+ * they are going ("רגר 10, באר שבע"). That is what the user reached for first, so
+ * addresses, streets and towns lead; sites from the list follow, for the trip
+ * whose destination is itself a brown sign.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,7 +87,7 @@ fun DestinationSheet(
             SearchField(
                 query = picker.query,
                 onQueryChange = actions::onDestinationQueryChange,
-                hint = "יישוב, כתובת, או אתר מהרשימה",
+                hint = "כתובת או יישוב — למשל רגר 10, באר שבע",
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 12.dp)
@@ -102,19 +100,9 @@ fun DestinationSheet(
                 contentPadding = PaddingValues(bottom = 24.dp),
             ) {
                 if (picker.query.trim().length < 2) {
-                    item { Note("הקלד לפחות שתי אותיות") }
+                    item { Note("הקלד רחוב ומספר, או שם של יישוב") }
                 } else {
-                    if (picker.sites.isNotEmpty()) {
-                        item { SectionLabel("אתרים מהרשימה") }
-                        items(picker.sites, key = { "site:${it.id}" }) { site ->
-                            ResultRow(
-                                title = site.he,
-                                detail = site.cat.he,
-                                onClick = { actions.onChooseDestination(site.asDestination()) },
-                            ) { SignPlate(site.cat, size = 34.dp) }
-                        }
-                    }
-                    item { SectionLabel("מקומות") }
+                    item { SectionLabel("כתובות ויישובים") }
                     when {
                         picker.places.isNotEmpty() -> items(picker.places) { place ->
                             ResultRow(
@@ -135,8 +123,18 @@ fun DestinationSheet(
                             }
                         }
                         picker.searching -> item { Searching() }
-                        picker.error != null -> item { Note("חיפוש המקומות לא הצליח — ${picker.error}") }
-                        else -> item { Note("לא נמצא מקום בשם \"${picker.query.trim()}\"") }
+                        picker.error != null -> item { Note("חיפוש הכתובת לא הצליח — ${picker.error}") }
+                        else -> item { Note("לא נמצאה כתובת כזו") }
+                    }
+                    if (picker.sites.isNotEmpty()) {
+                        item { SectionLabel("אתרים מהרשימה") }
+                        items(picker.sites, key = { "site:${it.id}" }) { site ->
+                            ResultRow(
+                                title = site.he,
+                                detail = site.cat.he,
+                                onClick = { actions.onChooseDestination(site.asDestination()) },
+                            ) { SignPlate(site.cat, size = 34.dp) }
+                        }
                     }
                 }
             }

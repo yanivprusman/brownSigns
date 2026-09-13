@@ -67,8 +67,12 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /**
- * The whole app: every brown-signed destination in the country, nearest first —
- * or, with a destination set, nearest to the road there.
+ * The whole app: every brown-signed site in the country, nearest first — or, with
+ * an address to drive to, nearest to the road there.
+ *
+ * The word "יעד" belongs to one thing only, where the user is driving. The things
+ * in the list are "אתרים": when both were "יעדים", the list's own search box read
+ * as the place to type a destination, and that is where the user typed one.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,7 +102,7 @@ fun BrownSignsScreen(state: BrownSignsUiState, actions: BrownSignsActions) {
             SearchField(
                 query = state.query,
                 onQueryChange = actions::onQueryChange,
-                hint = "חפש יעד — מצדה, קיסריה, מוזיאון…",
+                hint = "חפש אתר — מצדה, קיסריה, מוזיאון…",
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -250,7 +254,7 @@ private fun SignHeader(state: BrownSignsUiState, actions: BrownSignsActions) {
                 )
                 Spacer(Modifier.weight(1f))
                 Text(
-                    text = "${groupDigits(state.total)} יעדים",
+                    text = "${groupDigits(state.total)} אתרים",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = colors.signInk.copy(alpha = 0.7f),
@@ -263,17 +267,16 @@ private fun SignHeader(state: BrownSignsUiState, actions: BrownSignsActions) {
 
 /**
  * What the list is ordered by, and the way to change it. Without a destination:
- * nearest to you, with the way in to setting one. With a route: nearest to the
- * road, and the way back out. While a route is still being worked out the list
- * is still nearest-first, so both lines show.
+ * nearest to you, and the field to type where you are driving. With a route:
+ * nearest to the road, and the way back out. While a route is still being worked
+ * out the list is still nearest-first, so both lines show.
  */
 @Composable
 private fun OrderingLines(state: BrownSignsUiState, actions: BrownSignsActions) {
     when (val route = state.route) {
-        RouteState.None -> Row(verticalAlignment = Alignment.CenterVertically) {
-            LocationLine(state, actions, Modifier.weight(1f))
-            Spacer(Modifier.width(8.dp))
-            DestinationChip(onClick = actions::onOpenDestinationPicker)
+        RouteState.None -> {
+            LocationLine(state, actions)
+            DestinationField(onClick = actions::onOpenDestinationPicker)
         }
         is RouteState.Ready -> RouteBanner(route, actions)
         else -> {
@@ -288,7 +291,7 @@ private fun OrderingLines(state: BrownSignsUiState, actions: BrownSignsActions) 
  * sorted alphabetically and a list sorted by distance look identical.
  */
 @Composable
-private fun LocationLine(state: BrownSignsUiState, actions: BrownSignsActions, modifier: Modifier = Modifier) {
+private fun LocationLine(state: BrownSignsUiState, actions: BrownSignsActions) {
     val colors = LocalSignColors.current
     val (icon, text, action) = when (val loc = state.location) {
         LocationState.Pending -> Triple(
@@ -315,7 +318,7 @@ private fun LocationLine(state: BrownSignsUiState, actions: BrownSignsActions, m
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = if (action != null) modifier.clickable(onClick = action) else modifier,
+        modifier = if (action != null) Modifier.clickable(onClick = action) else Modifier,
     ) {
         Icon(icon, contentDescription = null, tint = colors.signInk.copy(alpha = 0.8f), modifier = Modifier.size(15.dp))
         Spacer(Modifier.width(7.dp))
@@ -331,22 +334,34 @@ private fun LocationLine(state: BrownSignsUiState, actions: BrownSignsActions, m
     }
 }
 
-/** The way in to ordering by a route — on the sign, beside what the list is ordered by now. */
+/**
+ * Where the user is driving, shaped like the field it opens — a destination is
+ * typed, so it should look like somewhere to type. It sits on the sign, apart
+ * from the list's own search, which only filters the sites.
+ */
 @Composable
-private fun DestinationChip(onClick: () -> Unit) {
+private fun DestinationField(onClick: () -> Unit) {
     val colors = LocalSignColors.current
-    val shape = RoundedCornerShape(6.dp)
+    val shape = RoundedCornerShape(8.dp)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp)
             .clip(shape)
+            .background(colors.signInk.copy(alpha = 0.12f))
             .border(1.dp, colors.signInk.copy(alpha = 0.6f), shape)
             .clickable(onClick = onClick)
-            .padding(horizontal = 9.dp, vertical = 5.dp),
+            .padding(horizontal = 12.dp, vertical = 11.dp),
     ) {
-        Icon(Icons.Filled.Route, contentDescription = null, tint = colors.signInk, modifier = Modifier.size(15.dp))
-        Spacer(Modifier.width(5.dp))
-        Text("יעד נסיעה", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.signInk)
+        Icon(Icons.Filled.Route, contentDescription = null, tint = colors.signInk, modifier = Modifier.size(19.dp))
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = "לאן נוסעים? הקלד כתובת",
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+            color = colors.signInk,
+        )
     }
 }
 
@@ -539,8 +554,8 @@ private fun EmptyState(state: BrownSignsUiState, actions: BrownSignsActions) {
     val what = when {
         state.query.isNotEmpty() && state.selected.isNotEmpty() ->
             "אין ${state.selected.joinToString(" או ") { it.plural }} בשם \"${state.query}\""
-        state.query.isNotEmpty() -> "לא נמצא יעד בשם \"${state.query}\""
-        else -> "אין יעדים בסינון הזה"
+        state.query.isNotEmpty() -> "לא נמצא אתר בשם \"${state.query}\""
+        else -> "אין אתרים בסינון הזה"
     }
     Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -570,7 +585,7 @@ private fun DatasetFooter(state: BrownSignsUiState) {
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
-            text = "${groupDigits(state.total)} יעדים · מיפוי OpenStreetMap",
+            text = "${groupDigits(state.total)} אתרים · מיפוי OpenStreetMap",
             fontSize = 12.sp,
             color = colors.inkDim,
             textAlign = TextAlign.Center,

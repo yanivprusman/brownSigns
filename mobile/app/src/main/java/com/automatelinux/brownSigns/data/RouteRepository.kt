@@ -50,9 +50,11 @@ class RouteRepository @Inject constructor(
 
     private val saved: File get() = File(context.filesDir, "route.json")
 
-    suspend fun searchPlaces(query: String): List<Place> = withContext(Dispatchers.IO) {
+    /** Addresses, streets and towns; [near] ranks the ones around the phone first. */
+    suspend fun searchPlaces(query: String, near: LatLon?): List<Place> = withContext(Dispatchers.IO) {
         val q = URLEncoder.encode(query.trim(), "UTF-8")
-        json.decodeFromString<PlaceSearchResponse>(get("api/places?q=$q")).places
+        val bias = near?.let { "&lat=${it.lat}&lon=${it.lon}" }.orEmpty()
+        json.decodeFromString<PlaceSearchResponse>(get("api/places?q=$q$bias")).places
     }
 
     suspend fun route(from: LatLon, to: Destination): RouteResponse = withContext(Dispatchers.IO) {
