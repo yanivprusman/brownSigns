@@ -20,8 +20,12 @@ Notes for anyone working here:
   rebuild. After changing it, re-run with `--offline` and rebuild the APK so the
   bundled asset matches.
 - **Ordering by a route needs `MOTIS_URL` in `.env.local`** (see `.env.example`).
-  The backend asks the MOTIS instance this peer already runs for the road and for
-  place search (`lib/motis.ts`); the phone measures every site against that road
+  The road and the address search both come from `@automatelinux/geo`
+  (`/opt/automateLinux/packages/geo`) — the same code publicTransportation and
+  midreshaze use. Never add a geocoder or a MOTIS client to this app. The
+  word "יעד" means only where the user is driving; the list's entries are "אתרים"
+  (when both were "יעדים", the list's search box was taken for the destination
+  field). The phone measures every site against that road
   itself (`geo/RouteLine.kt`) and keeps the route in `route.json`, so the order
   holds with no signal. A route is never stood in for by a straight line — with
   no road there is no route ordering, and the header says why.
