@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Route
+import androidx.compose.material.icons.filled.SatelliteAlt
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -193,6 +194,9 @@ fun SiteDetailSheet(
                     ActionButton(Icons.Filled.Route, "מה יש בדרך לכאן", false) {
                         actions.onChooseDestination(site.asDestination())
                     }
+                }
+                ActionButton(Icons.Filled.SatelliteAlt, "Google Earth", false) {
+                    actions.onOpenUrl(site.googleEarthUrl)
                 }
                 site.wikipediaUrl?.let { url ->
                     ActionButton(Icons.Filled.MenuBook, "ויקיפדיה", false) { actions.onOpenUrl(url) }

@@ -43,6 +43,15 @@ data class Site(
             if (title.isBlank()) return null
             return "https://$lang.wikipedia.org/wiki/" + title.replace(' ', '_')
         }
+
+    /**
+     * The place in Google Earth. A link, not an intent aimed at Earth's package:
+     * Earth claims earth.google.com as a verified app link, so a phone that has
+     * Earth opens the app and one that doesn't opens Earth on the web. It searches
+     * the coordinates rather than the name — the pin lands on this exact spot.
+     */
+    val googleEarthUrl: String
+        get() = "https://earth.google.com/web/search/$lat,$lon"
 }
 
 @Serializable
