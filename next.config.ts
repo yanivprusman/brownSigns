@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: process.env.ALLOWED_DEV_ORIGINS?.split(',') ?? [],
   turbopack: { root: turbopackRoot },
   outputFileTracingRoot: turbopackRoot,
-  transpilePackages: ["@automatelinux/geo"],
+  transpilePackages: ["@automatelinux/geo", '@claudecontrol/feedback-lib', '@addnewfeature/feedback-lib-launcher'],
 };
 
 export default nextConfig;
