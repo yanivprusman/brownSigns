@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -32,12 +33,17 @@ import kotlin.math.roundToInt
 /**
  * One destination. Reads the way a sign does: pictogram, where it is, how far —
  * and, when the phone has a compass, an arrow that keeps pointing at it.
+ *
+ * The big figure is always the one the list is sorted by. [aheadFirst] says the
+ * list follows the road, so the road still to drive is big and the distance off
+ * the road is the small line; otherwise it is the other way round.
  */
 @Composable
 fun SiteRow(
     ranked: RankedSite,
     heading: Float?,
     onClick: () -> Unit,
+    aheadFirst: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalSignColors.current
@@ -85,68 +91,100 @@ fun SiteRow(
             verticalArrangement = Arrangement.spacedBy(3.dp),
         ) {
             val spot = ranked.onRoute
-            // Ordered by a route, the figure is how far the site is from the road;
-            // otherwise, how far it is from the phone.
-            val metres = spot?.offMetres ?: ranked.metres
-            if (metres == null) {
-                Text(
-                    text = "—",
-                    style = MeasureTextStyle,
-                    color = colors.inkDim,
-                )
-            } else {
-                val (figure, unit) = formatDistanceParts(metres)
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        text = figure,
-                        style = MeasureTextStyle,
-                        color = colors.measure,
-                        maxLines = 1,
-                        softWrap = false,
-                    )
-                    Spacer(Modifier.width(3.dp))
-                    Text(
-                        text = unit,
-                        fontSize = 11.sp,
-                        color = colors.measure,
-                        maxLines = 1,
-                        softWrap = false,
-                        modifier = Modifier.padding(bottom = 2.dp),
-                    )
-                }
-                if (spot != null) {
+            val ahead = spot?.aheadMetres
+            if (spot != null && aheadFirst) {
+                // Following the road: how much of it is left to drive is the figure.
+                if (ahead != null && ahead > ALONGSIDE_M) {
+                    MeasureFigure(ahead)
+                } else {
                     Text(
                         text = routeProgress(spot),
-                        fontSize = 11.sp,
-                        color = colors.inkDim,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (ahead != null && ahead < -ALONGSIDE_M) colors.inkDim else colors.measure,
                         maxLines = 1,
                         softWrap = false,
-                        textAlign = TextAlign.Center,
+                    )
+                }
+                Text(
+                    text = "${formatDistance(spot.offMetres)} מהדרך",
+                    fontSize = 11.sp,
+                    color = colors.inkDim,
+                    maxLines = 1,
+                    softWrap = false,
+                    textAlign = TextAlign.Center,
+                )
+            } else {
+                // Ordered by a route, the figure is how far the site is from the road;
+                // otherwise, how far it is from the phone.
+                val metres = spot?.offMetres ?: ranked.metres
+                if (metres == null) {
+                    Text(
+                        text = "—",
+                        style = MeasureTextStyle,
+                        color = colors.inkDim,
                     )
                 } else {
-                    val bearing = ranked.bearing
-                    if (bearing != null) {
-                        if (heading != null) {
-                            DirectionArrow(
-                                degrees = (bearing.toFloat() - heading),
-                                color = colors.signField.let { if (colors.isNight) colors.measure else it },
-                                size = 24.dp,
-                            )
-                        } else {
-                            // No compass: name the direction instead of drawing an
-                            // arrow that would be pointing at nothing.
-                            Text(
-                                text = compassPoint(bearing),
-                                fontSize = 11.sp,
-                                color = colors.inkDim,
-                                maxLines = 1,
-                                textAlign = TextAlign.Center,
-                            )
+                    MeasureFigure(metres)
+                    if (spot != null) {
+                        Text(
+                            text = routeProgress(spot),
+                            fontSize = 11.sp,
+                            color = colors.inkDim,
+                            maxLines = 1,
+                            softWrap = false,
+                            textAlign = TextAlign.Center,
+                        )
+                    } else {
+                        val bearing = ranked.bearing
+                        if (bearing != null) {
+                            if (heading != null) {
+                                DirectionArrow(
+                                    degrees = (bearing.toFloat() - heading),
+                                    color = colors.signField.let { if (colors.isNight) colors.measure else it },
+                                    size = 24.dp,
+                                )
+                            } else {
+                                // No compass: name the direction instead of drawing an
+                                // arrow that would be pointing at nothing.
+                                Text(
+                                    text = compassPoint(bearing),
+                                    fontSize = 11.sp,
+                                    color = colors.inkDim,
+                                    maxLines = 1,
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+/** A distance as the big figure of a row: the number, with its unit set small beside it. */
+@Composable
+private fun MeasureFigure(metres: Double) {
+    val colors = LocalSignColors.current
+    val (figure, unit) = formatDistanceParts(metres)
+    Row(verticalAlignment = Alignment.Bottom) {
+        Text(
+            text = figure,
+            style = MeasureTextStyle,
+            color = colors.measure,
+            maxLines = 1,
+            softWrap = false,
+        )
+        Spacer(Modifier.width(3.dp))
+        Text(
+            text = unit,
+            fontSize = 11.sp,
+            color = colors.measure,
+            maxLines = 1,
+            softWrap = false,
+            modifier = Modifier.padding(bottom = 2.dp),
+        )
     }
 }
 

@@ -142,6 +142,7 @@ fun BrownSignsScreen(state: BrownSignsUiState, actions: BrownSignsActions) {
                                 ranked = ranked,
                                 heading = state.heading,
                                 onClick = { actions.onOpenSite(ranked.site) },
+                                aheadFirst = state.routeOrder == RouteOrder.AHEAD,
                             )
                             RowHairline()
                         }
