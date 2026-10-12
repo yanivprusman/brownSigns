@@ -56,6 +56,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.automatelinux.brownSigns.data.AHEAD_CORRIDOR_M
+import com.automatelinux.brownSigns.data.RouteOrder
 import com.automatelinux.brownSigns.geo.formatDistance
 import com.automatelinux.brownSigns.geo.groupDigits
 import com.automatelinux.brownSigns.ui.components.CategoryChips
@@ -278,7 +280,7 @@ private fun OrderingLines(state: BrownSignsUiState, actions: BrownSignsActions) 
             LocationLine(state, actions)
             DestinationField(onClick = actions::onOpenDestinationPicker)
         }
-        is RouteState.Ready -> RouteBanner(route, actions)
+        is RouteState.Ready -> RouteBanner(route, state.routeOrder, actions)
         else -> {
             LocationLine(state, actions)
             RouteStatus(route, actions)
@@ -365,42 +367,69 @@ private fun DestinationField(onClick: () -> Unit) {
     }
 }
 
-/** The list is ordered by the road to a destination: where to, how far, and the way back out. */
+/**
+ * The list is ordered by the road to a destination: where to, how far, which of
+ * the two road orders, and the way back out.
+ */
 @Composable
-private fun RouteBanner(route: RouteState.Ready, actions: BrownSignsActions) {
+private fun RouteBanner(route: RouteState.Ready, order: RouteOrder, actions: BrownSignsActions) {
     val colors = LocalSignColors.current
     val planned = route.route
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        // Tapping the destination changes it.
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.weight(1f).clickable(onClick = actions::onOpenDestinationPicker),
-        ) {
-            Icon(
-                Icons.Filled.Route,
-                contentDescription = null,
-                tint = colors.signInk.copy(alpha = 0.85f),
-                modifier = Modifier.size(15.dp),
-            )
-            Spacer(Modifier.width(7.dp))
-            Column {
-                Text(
-                    text = "לפי הקרבה לדרך אל ${planned.destination.name}",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.signInk,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // Tapping the destination changes it.
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f).clickable(onClick = actions::onOpenDestinationPicker),
+            ) {
+                Icon(
+                    Icons.Filled.Route,
+                    contentDescription = null,
+                    tint = colors.signInk.copy(alpha = 0.85f),
+                    modifier = Modifier.size(15.dp),
                 )
+                Spacer(Modifier.width(7.dp))
+                Column {
+                    Text(
+                        text = when (order) {
+                            RouteOrder.NEAR_ROAD -> "לפי הקרבה לדרך אל ${planned.destination.name}"
+                            RouteOrder.AHEAD -> "לפי הסדר בדרך אל ${planned.destination.name}"
+                        },
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.signInk,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = "${formatDistance(planned.distanceM)} · ${formatDuration(planned.durationSec)} נסיעה",
+                        fontSize = 12.sp,
+                        color = colors.signInk.copy(alpha = 0.7f),
+                        maxLines = 1,
+                    )
+                }
+            }
+            ClearRouteButton(actions::onClearRoute)
+        }
+        Spacer(Modifier.height(6.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SignPill("הכי קרוב לדרך", selected = order == RouteOrder.NEAR_ROAD) {
+                actions.onSetRouteOrder(RouteOrder.NEAR_ROAD)
+            }
+            Spacer(Modifier.width(6.dp))
+            SignPill("הבא בדרך", selected = order == RouteOrder.AHEAD) {
+                actions.onSetRouteOrder(RouteOrder.AHEAD)
+            }
+            if (order == RouteOrder.AHEAD) {
+                Spacer(Modifier.width(8.dp))
                 Text(
-                    text = "${formatDistance(planned.distanceM)} · ${formatDuration(planned.durationSec)} נסיעה",
+                    text = "עד ${formatDistance(AHEAD_CORRIDOR_M)} מהדרך",
                     fontSize = 12.sp,
                     color = colors.signInk.copy(alpha = 0.7f),
                     maxLines = 1,
                 )
             }
         }
-        ClearRouteButton(actions::onClearRoute)
     }
 }
 
@@ -466,18 +495,22 @@ private fun ClearRouteButton(onClick: () -> Unit) {
     }
 }
 
-/** A small bordered word on the sign. Clickable on its own only when given [onClick]. */
+/**
+ * A small bordered word on the sign. Clickable on its own only when given [onClick];
+ * [selected] fills it, for the chosen one of a pair.
+ */
 @Composable
-private fun SignPill(text: String, onClick: (() -> Unit)? = null) {
+private fun SignPill(text: String, selected: Boolean = false, onClick: (() -> Unit)? = null) {
     val colors = LocalSignColors.current
     val shape = RoundedCornerShape(5.dp)
     Text(
         text = text,
         fontSize = 13.sp,
         fontWeight = FontWeight.Bold,
-        color = colors.signInk,
+        color = if (selected) colors.signField else colors.signInk,
         modifier = Modifier
             .clip(shape)
+            .then(if (selected) Modifier.background(colors.signInk, shape) else Modifier)
             .border(1.dp, colors.signInk.copy(alpha = 0.6f), shape)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(horizontal = 8.dp, vertical = 2.dp),

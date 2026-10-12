@@ -49,6 +49,7 @@ class RouteRepository @Inject constructor(
         .build()
 
     private val saved: File get() = File(context.filesDir, "route.json")
+    private val savedOrder: File get() = File(context.filesDir, "route-order.txt")
 
     /** Addresses, streets and towns; [near] ranks the ones around the phone first. */
     suspend fun searchPlaces(query: String, near: LatLon?): List<Place> = withContext(Dispatchers.IO) {
@@ -81,6 +82,21 @@ class RouteRepository @Inject constructor(
                 throw IllegalStateException("could not replace ${saved.name}")
             }
         }
+    }
+
+    /** How routes order the list — a preference, so it outlives any one route. Null if never chosen. */
+    suspend fun loadOrder(): RouteOrder? = withContext(Dispatchers.IO) {
+        if (!savedOrder.exists()) return@withContext null
+        val name = savedOrder.readText().trim()
+        RouteOrder.entries.firstOrNull { it.name == name } ?: run {
+            Log.w(TAG, "saved route order \"$name\" unknown — deleting it")
+            savedOrder.delete()
+            null
+        }
+    }
+
+    suspend fun saveOrder(order: RouteOrder) {
+        withContext(Dispatchers.IO) { savedOrder.writeText(order.name) }
     }
 
     suspend fun clear() {

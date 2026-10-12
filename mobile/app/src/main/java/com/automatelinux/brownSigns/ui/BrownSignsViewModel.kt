@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.automatelinux.brownSigns.data.BackendException
 import com.automatelinux.brownSigns.data.BackendUnreachable
+import com.automatelinux.brownSigns.data.RouteOrder
 import com.automatelinux.brownSigns.data.RouteRepository
 import com.automatelinux.brownSigns.data.SiteRepository
 import com.automatelinux.brownSigns.data.countByCategory
@@ -217,6 +218,7 @@ class BrownSignsViewModel @Inject constructor(
                         originOnRoute = origin?.let(index.line::locate),
                         categories = snapshot.selected,
                         query = snapshot.query,
+                        order = snapshot.routeOrder,
                     )
                 } else {
                     rankSites(
@@ -239,6 +241,7 @@ class BrownSignsViewModel @Inject constructor(
      */
     private fun restoreRoute() {
         routeJob = viewModelScope.launch {
+            routes.loadOrder()?.let { _state.value = _state.value.copy(routeOrder = it) }
             val saved = routes.loadSaved() ?: return@launch
             try {
                 useRoute(saved)
@@ -387,6 +390,13 @@ class BrownSignsViewModel @Inject constructor(
         _state.value = _state.value.copy(route = RouteState.None)
         rerank()
         viewModelScope.launch { routes.clear() }
+    }
+
+    override fun onSetRouteOrder(order: RouteOrder) {
+        if (_state.value.routeOrder == order) return
+        _state.value = _state.value.copy(routeOrder = order)
+        rerank()
+        viewModelScope.launch { routes.saveOrder(order) }
     }
 
     // ── The list ───────────────────────────────────────────────────────────

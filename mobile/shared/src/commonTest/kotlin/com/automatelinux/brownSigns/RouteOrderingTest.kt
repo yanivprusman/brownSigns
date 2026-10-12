@@ -2,6 +2,7 @@ package com.automatelinux.brownSigns
 
 import com.automatelinux.brownSigns.data.model.Category
 import com.automatelinux.brownSigns.data.model.Site
+import com.automatelinux.brownSigns.data.RouteOrder
 import com.automatelinux.brownSigns.data.rankAlongRoute
 import com.automatelinux.brownSigns.data.sitesNamed
 import com.automatelinux.brownSigns.geo.LatLon
@@ -79,6 +80,34 @@ class RouteOrderingTest {
         val me = LatLon(31.05, 35.06) // ~5.7 km east of the road
         val ranked = rankAlongRoute(sites, positions(straight, sites), me, straight.locate(me))
         assertNull(ranked.single().onRoute!!.aheadMetres)
+    }
+
+    @Test
+    fun aheadOrderFollowsTheRoadThenFarOnesThenPassedOnes() {
+        val sites = listOf(
+            site("far", 31.07, 35.03), // ~2.9 km east, ahead
+            site("lateWide", 31.09, 35.015), // ~1.4 km off, 9.9 km along
+            site("passed", 31.01, 35.0003), // ~30 m off, 1.1 km along — behind the phone
+            site("soon", 31.06, 35.01), // ~950 m off, 6.7 km along
+            site("next", 31.055, 35.0003), // ~30 m off, 6.1 km along
+        )
+        val me = LatLon(31.05, 35.0)
+        val ranked = rankAlongRoute(
+            sites, positions(straight, sites), me, straight.locate(me), order = RouteOrder.AHEAD,
+        )
+        assertEquals(listOf("next", "soon", "lateWide", "far", "passed"), ranked.map { it.site.id })
+    }
+
+    @Test
+    fun aheadOrderWithoutAFixHasNothingBehind() {
+        val sites = listOf(
+            site("late", 31.08, 35.0003),
+            site("early", 31.01, 35.01),
+        )
+        val ranked = rankAlongRoute(
+            sites, positions(straight, sites), origin = null, originOnRoute = null, order = RouteOrder.AHEAD,
+        )
+        assertEquals(listOf("early", "late"), ranked.map { it.site.id })
     }
 
     @Test

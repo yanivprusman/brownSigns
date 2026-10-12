@@ -1,6 +1,7 @@
 package com.automatelinux.brownSigns.ui
 
 import com.automatelinux.brownSigns.data.RankedSite
+import com.automatelinux.brownSigns.data.RouteOrder
 import com.automatelinux.brownSigns.data.model.Category
 import com.automatelinux.brownSigns.data.model.Destination
 import com.automatelinux.brownSigns.data.model.Place
@@ -86,6 +87,8 @@ data class BrownSignsUiState(
     val refreshNote: String? = null,
     val openSite: Site? = null,
     val route: RouteState = RouteState.None,
+    /** How a [RouteState.Ready] route orders the list; kept between trips. */
+    val routeOrder: RouteOrder = RouteOrder.NEAR_ROAD,
     /** Null while the destination sheet is closed. */
     val picker: DestinationPickerState? = null,
 )
@@ -106,4 +109,5 @@ interface BrownSignsActions {
     fun onChooseDestination(destination: Destination)
     fun onRetryRoute()
     fun onClearRoute()
+    fun onSetRouteOrder(order: RouteOrder)
 }

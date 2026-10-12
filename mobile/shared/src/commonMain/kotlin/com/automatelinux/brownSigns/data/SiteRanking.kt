@@ -92,15 +92,37 @@ fun rankSites(
         }
 }
 
+/** The two ways a route can order the list. */
+enum class RouteOrder {
+    /** Closest to the road first; the fewest-metres detour wins. */
+    NEAR_ROAD,
+
+    /**
+     * The order the road reaches them — the next one coming up first. Only sites
+     * within [AHEAD_CORRIDOR_M] of the road are in this sequence: ordered by
+     * kilometre alone, a site 30 km off the road would sit between two that are
+     * beside it.
+     */
+    AHEAD,
+}
+
 /**
- * Filter, then order by how far each site lies from the planned road.
+ * Filter, then order by the planned road, as [order] says.
  *
- * Distances are compared in [OFF_ROUTE_STEP_M] steps, and sites in the same step
- * come in the order the road reaches them: 30 m or 80 m off the road is the same
- * stop to a driver, and the top of the list then reads like the road itself.
+ * [RouteOrder.NEAR_ROAD]: distances are compared in [OFF_ROUTE_STEP_M] steps, and
+ * sites in the same step come in the order the road reaches them: 30 m or 80 m off
+ * the road is the same stop to a driver, and the top of the list then reads like
+ * the road itself.
  *
- * The order depends only on the route, never on where the phone is, so it does
- * not reshuffle while driving — only the "in N km" figure moves.
+ * [RouteOrder.AHEAD]: sites within [AHEAD_CORRIDOR_M] of the road, in the order the
+ * road reaches them; then the ones farther off, nearest the road first; then — once
+ * the phone is on the road — the ones already behind it, the most recently passed
+ * first. They are listed, not dropped: a list that silently lost sites would look
+ * exactly like one that had none.
+ *
+ * The NEAR_ROAD order depends only on the route, never on where the phone is, so it
+ * does not reshuffle while driving — only the "in N km" figure moves. AHEAD moves a
+ * site to the end only when it is passed.
  *
  * [positions] must hold every site in [sites]; the caller measures them together.
  */
@@ -111,16 +133,33 @@ fun rankAlongRoute(
     originOnRoute: RoutePosition?,
     categories: Set<Category> = emptySet(),
     query: String = "",
+    order: RouteOrder = RouteOrder.NEAR_ROAD,
 ): List<RankedSite> {
     val from = originOnRoute?.takeIf { it.offMetres <= ON_ROUTE_M }
+    val comparator = when (order) {
+        RouteOrder.NEAR_ROAD -> compareBy<Pair<Site, RoutePosition>>(
+            { (it.second.offMetres / OFF_ROUTE_STEP_M).toInt() },
+            { it.second.alongMetres },
+        )
+        RouteOrder.AHEAD -> {
+            val behind = { p: RoutePosition -> from != null && p.alongMetres - from.alongMetres < -ALONGSIDE_M }
+            compareBy<Pair<Site, RoutePosition>>(
+                { behind(it.second) },
+                { it.second.offMetres > AHEAD_CORRIDOR_M },
+                {
+                    val p = it.second
+                    when {
+                        behind(p) -> -p.alongMetres
+                        p.offMetres > AHEAD_CORRIDOR_M -> p.offMetres
+                        else -> p.alongMetres
+                    }
+                },
+            )
+        }
+    }
     return filterSites(sites, categories, query)
         .map { it to positions.getValue(it.id) }
-        .sortedWith(
-            compareBy<Pair<Site, RoutePosition>>(
-                { (it.second.offMetres / OFF_ROUTE_STEP_M).toInt() },
-                { it.second.alongMetres },
-            ),
-        )
+        .sortedWith(comparator)
         .map { (site, position) ->
             val there = LatLon(site.lat, site.lon)
             RankedSite(
@@ -168,6 +207,12 @@ private const val OFF_ROUTE_STEP_M = 100.0
 
 /** Farther than this from the road, the phone is not on the route and "in N km" is not said. */
 private const val ON_ROUTE_M = 2_000.0
+
+/** In [RouteOrder.AHEAD], farther than this from the road a site is out of the driving sequence. */
+const val AHEAD_CORRIDOR_M = 2_000.0
+
+/** Within this far along the road, a site is beside the phone rather than ahead of it or behind. */
+const val ALONGSIDE_M = 300.0
 
 /** How many sites of each category survive the current query — drives the chip counts. */
 fun countByCategory(sites: List<Site>, query: String = ""): Map<Category, Int> {

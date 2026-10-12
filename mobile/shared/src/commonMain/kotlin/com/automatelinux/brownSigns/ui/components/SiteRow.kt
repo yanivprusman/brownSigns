@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.automatelinux.brownSigns.data.RankedSite
+import com.automatelinux.brownSigns.data.ALONGSIDE_M
 import com.automatelinux.brownSigns.data.RouteSpot
 import com.automatelinux.brownSigns.geo.compassPoint
 import com.automatelinux.brownSigns.geo.formatDistance
@@ -161,9 +162,6 @@ fun routeProgress(spot: RouteSpot): String {
         else -> "בעוד ${formatDistance(ahead)}"
     }
 }
-
-/** Within this far along the road, a site is beside the phone rather than ahead of it or behind. */
-private const val ALONGSIDE_M = 300.0
 
 /** The hairline between rows — structure, not decoration: it starts where the text does. */
 @Composable
